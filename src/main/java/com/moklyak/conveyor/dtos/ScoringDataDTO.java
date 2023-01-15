@@ -14,13 +14,13 @@ public class ScoringDataDTO {
     String firstName;
     String lastName;
     String middleName;
-    Enum<Gender> gender;
+    Gender gender;
     LocalDate birthDate;
     String passportSeries;
     String passportNumber;
     LocalDate passportIssueDate;
     String passportIssueBranch;
-    Enum<MaritalStatus> maritalStatus;
+    MaritalStatus maritalStatus;
     Integer dependentAmount;
     EmploymentDTO employment;
     String account;

@@ -1,5 +1,6 @@
 package com.moklyak.conveyor.dtos;
 
+import com.moklyak.conveyor.enums.EmploymentPosition;
 import com.moklyak.conveyor.enums.EmploymentStatus;
 import lombok.Data;
 
@@ -7,10 +8,10 @@ import java.math.BigDecimal;
 
 @Data
 public class EmploymentDTO {
-    Enum<EmploymentStatus> employmentStatus;
+    EmploymentStatus employmentStatus;
     String employerINN;
     BigDecimal salary;
-    Enum<EmploymentStatus> position;
+    EmploymentPosition position;
     Integer workExperienceTotal;
     Integer workExperienceCurrent;
 }
