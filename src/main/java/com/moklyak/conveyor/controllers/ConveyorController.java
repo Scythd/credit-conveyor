@@ -10,8 +10,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.type.filter.RegexPatternTypeFilter;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -35,18 +37,20 @@ public class ConveyorController {
         this.scoringService = scoringService;
     }
 
-    @PostMapping("/offers")
-    ResponseEntity<List<LoanOfferDTO>> offers(LoanApplicationRequestDTO dto) {
+
+    @PostMapping(value = "/offers")
+    ResponseEntity<List<LoanOfferDTO>> offers(@RequestBody LoanApplicationRequestDTO dto) {
         logger.info("generating offers by request body: %s.".formatted(dto));
         scoringService.preScore(dto);
         List<LoanOfferDTO> result = scoringService.createOffers(dto);
         result.sort((x, y) -> y.getRate().compareTo(x.getRate()));
         logger.info("generated offers: %s, by request body: %s.".formatted(result, dto));
+        // created??? 201 better for rest api
         return ResponseEntity.ok(result);
     }
 
-    @PostMapping("/calculation")
-    ResponseEntity<CreditDTO> calculation(ScoringDataDTO dto) {
+    @PostMapping(value = "/calculation")
+    ResponseEntity<CreditDTO> calculation(@RequestBody ScoringDataDTO dto) {
         logger.info("calculation for request body: %s.".formatted(dto));
         CreditDTO creditDTO = new CreditDTO();
         try {
@@ -79,13 +83,14 @@ public class ConveyorController {
         } catch (ScoreDenyException ex) {
             logger.info("calculation for body: %s interrupted via scoring violation".formatted(dto));
             // to do if deny
-            return ResponseEntity.unprocessableEntity().build();
+            return ResponseEntity.unprocessableEntity().header("error", ex.getMessage()).build();
         }
 
         creditDTO.setAmount(dto.getAmount());
         creditDTO.setTerm(dto.getTerm());
         creditDTO.setIsSalaryClient(dto.getIsSalaryClient());
         creditDTO.setIsInsuranceEnabled(dto.getIsInsuranceEnabled());
+        creditDTO.getPaymentSchedule().remove(0);
 
         logger.info("calculated result: %s, for request body: %s.".formatted(creditDTO, dto));
         return ResponseEntity.ok(creditDTO);

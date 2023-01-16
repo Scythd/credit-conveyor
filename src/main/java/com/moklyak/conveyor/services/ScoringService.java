@@ -95,7 +95,7 @@ public class ScoringService {
             BigDecimal tempRate = baseRate;
             tempRate = dto.getEmployment().getEmploymentStatus().changeRate(tempRate);
             tempRate = dto.getEmployment().getPosition().changeRate(tempRate);
-            if (dto.getEmployment().getSalary().multiply(BigDecimal.valueOf(20)).compareTo(dto.getAmount()) == 1) {
+            if (dto.getEmployment().getSalary().multiply(BigDecimal.valueOf(20)).compareTo(dto.getAmount()) != 1) {
                 throw new ScoreDenyException("Denied by salary amount");
             }
             tempRate = dto.getMaritalStatus().changeRate(tempRate);
@@ -124,41 +124,45 @@ public class ScoringService {
     }
 
     public BigDecimal calcPsk(BigDecimal amount, Integer term, BigDecimal rate, BigDecimal monthlyPayment, List<PaymentScheduleElement> paymentSchedule) {
-        logger.info("calculation psk");
-        BigDecimal[] q = new BigDecimal[term + 1], e = new BigDecimal[term + 1];
-        LocalDate dateNow = LocalDate.now();
-        q[0] = BigDecimal.ONE;
-        e[0] = BigDecimal.ZERO;
 
-        for (int i = 0; i < term - 1; i++) {
+        logger.info("calculation psk");
+        return monthlyPayment.multiply(BigDecimal.valueOf(term)).divide(amount, MathContext.DECIMAL64).subtract(BigDecimal.ONE).divide(BigDecimal.valueOf(term).divide(BigDecimal.valueOf(12), MathContext.DECIMAL64)).multiply(BigDecimal.valueOf(100));
+        /*BigDecimal[] q = new BigDecimal[term + 1], e = new BigDecimal[term + 1], mf = new BigDecimal[term + 1];
+        LocalDate dateNow = LocalDate.now();
+
+        for (int i = 0; i < term + 1; i++) {
             PaymentScheduleElement payment = paymentSchedule.get(i);
             int moneyFlowDateDiff = Period.between(payment.getDate(), dateNow).getDays();
             BigDecimal temp = BigDecimal.valueOf(moneyFlowDateDiff).divide(BASIC_PERIOD_DAYS);
-            q[i + 1] = temp.setScale(0, RoundingMode.FLOOR);
-            e[i + 1] = temp.subtract(q[i + 1]).divide(BASIC_PERIOD_DAYS);
+            q[i] = temp.setScale(0, RoundingMode.FLOOR);
+            e[i] = temp.subtract(q[i]).divide(BASIC_PERIOD_DAYS);
+            if (i == 0){
+                mf[i] = paymentSchedule.get(0).getRemainDebt();
+            } else {
+                mf[i] = paymentSchedule.get(i).getTotalPayment();
+            }
         }
         BigDecimal i = BigDecimal.ZERO;
         BigDecimal x = BigDecimal.ONE;
         BigDecimal x_m = BigDecimal.ZERO;
-        BigDecimal s = BigDecimal.valueOf(0.000001);
+        BigDecimal s = BigDecimal.valueOf(0.001);
         while (x.compareTo(BigDecimal.ZERO) == 1) {
             x_m = x;
             x = BigDecimal.ZERO;
-            x = x.add(amount.negate().divide(BigDecimal.ONE));
             for (int k = 0; k < paymentSchedule.size(); k++) {
                 int value;
                 try {
-                    value = q[k + 1].intValueExact();
+                    value = q[k].intValueExact();
                 } catch (ArithmeticException ex) {
                     logger.error(ex.getMessage());
                     logger.info("possibly loses info in conversation from BigDecimal to exact int");
-                    value = q[k + 1].intValue();
+                    value = q[k].intValue();
                 }
-                x = x.add(paymentSchedule.get(k).getTotalPayment()
-                        .divide(BigDecimal.ONE.add(e[k + 1].multiply(i))
+                x = x.add(mf[k].divide(BigDecimal.ONE.add(e[k].multiply(i), MathContext.DECIMAL64)
                                 .multiply(BigDecimal.ONE.add(i).pow(value))));
             }
             i = i.add(s);
+
         }
         if (x.compareTo(x_m) == 1) {
             i = i.subtract(s);
@@ -171,38 +175,47 @@ public class ScoringService {
                 .divide(BigDecimal.valueOf(1000));
 
 
-        return psk;
+        return psk;*/
     }
 
     public BigDecimal calcMonthlyPayment(BigDecimal amount, Integer term, BigDecimal rate) {
         logger.info("calculating monthly payment");
-        // amount * (rate + (rate / (rate + 1) * term - 1))
-        return amount.multiply(rate.add(rate.divide(rate.add(BigDecimal.ONE), MathContext.DECIMAL64)
-                .multiply(BigDecimal.valueOf(term))
-                .subtract(BigDecimal.ONE))
-        );
+        rate = rate.divide(BigDecimal.valueOf(1200), MathContext.DECIMAL64);
+        // (rate * (rate + 1)^term / ((rate + 1)^term - 1)) * amount = monthlyPayment
+        return rate.add(BigDecimal.ONE).pow(term).multiply(rate).divide(rate.add(BigDecimal.ONE).pow(term).subtract(BigDecimal.ONE), MathContext.DECIMAL64).multiply(amount);
+
     }
 
     public List<PaymentScheduleElement> calcPaymentSchedule(BigDecimal loanAmount, Integer term, BigDecimal rate, BigDecimal monthlyPayment) {
         logger.info("calculating payment schedule");
-        BigDecimal monthRate = rate.divide(BigDecimal.valueOf(12));
+        BigDecimal monthRate = rate.divide(BigDecimal.valueOf(1200));
         BigDecimal currLoanAmount = loanAmount;
         List<PaymentScheduleElement> result = new ArrayList<>();
         LocalDate dateBegin = LocalDate.now();
+
+        PaymentScheduleElement pse = new PaymentScheduleElement();
+        pse.setDate(dateBegin);
+        pse.setNumber(0);
+        pse.setTotalPayment(BigDecimal.ZERO);
+        pse.setInterestPayment(BigDecimal.ZERO);
+        pse.setDebtPayment(BigDecimal.ZERO);
+        pse.setRemainDebt(currLoanAmount.negate());
+        result.add(pse);
         for (int i = 0; i < term; i++) {
-            PaymentScheduleElement pse = new PaymentScheduleElement();
+            pse = new PaymentScheduleElement();
             pse.setDate(dateBegin.plusMonths(i + 1));
             pse.setNumber(i + 1);
-            pse.setTotalPayment(monthlyPayment);
-            pse.setInterestPayment(currLoanAmount.multiply(monthRate));
-            pse.setDebtPayment(monthlyPayment.subtract(pse.getInterestPayment()));
+            pse.setTotalPayment(monthlyPayment.setScale(2, RoundingMode.HALF_UP));
+            pse.setInterestPayment(currLoanAmount.multiply(monthRate).setScale(2, RoundingMode.HALF_UP));
+            pse.setDebtPayment(monthlyPayment.subtract(pse.getInterestPayment()).setScale(2, RoundingMode.HALF_UP));
             currLoanAmount = currLoanAmount.subtract(pse.getDebtPayment());
-            pse.setRemainDebt(currLoanAmount);
+            pse.setRemainDebt(currLoanAmount.setScale(2, RoundingMode.HALF_UP));
             result.add(pse);
         }
-        if (currLoanAmount.setScale(2).compareTo(BigDecimal.ZERO) != 0) {
+
+        if (currLoanAmount.setScale(2, RoundingMode.HALF_UP).compareTo(BigDecimal.ZERO) != 0) {
             logger.info("Payment schedule calculation malfunction. Remain loan amount is not zero: %s"
-                    .formatted(currLoanAmount.setScale(2).toString()));
+                    .formatted(currLoanAmount.setScale(2, RoundingMode.HALF_UP).toString()));
         }
         return result;
     }
