@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.moklyak.conveyor.controllers.ConveyorController;
 import com.moklyak.conveyor.dtos.LoanApplicationRequestDTO;
-import com.moklyak.conveyor.dtos.LoanOfferDTO;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,7 +20,6 @@ import org.springframework.web.context.WebApplicationContext;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.List;
 
 @SpringBootTest(classes = ConveyorController.class)
 class ConveyorApplicationTests {
@@ -65,14 +63,6 @@ class ConveyorApplicationTests {
 
         int status = mvcResult.getResponse().getStatus();
         Assertions.assertEquals(200, status);
-        //String content = mvcResult.getResponse().getContentAsString();
-        //List<LoanOfferDTO> response = mapFromJson(content,  Class.;
-        //Assertions.assertEquals(content, null);
-        //object.setFirstName("A");
-        //inputJson = mapToJson(object);
-        //mvcResult = mvc.perform(MockMvcRequestBuilders.post(uri)
-        //        .contentType(MediaType.APPLICATION_JSON_VALUE).content(inputJson)).andReturn();
-        //status = mvcResult.getResponse().getStatus();
 
     }
 }

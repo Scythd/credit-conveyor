@@ -24,24 +24,19 @@ import java.util.regex.Pattern;
 @Service
 public class ScoringService {
 
-    Logger logger = LoggerFactory.getLogger(ScoringService.class);
+    private static final Logger logger = LoggerFactory.getLogger(ScoringService.class);
     @Value("${conveyor.baseRate}")
-    BigDecimal baseRate;
-    final Predicate<String> NAME_REGEXP = Pattern.compile("[a-zA-Z]{2,30}").asMatchPredicate();
-    final Predicate<String> EMAIL_REGEXP = Pattern.compile("[\\w\\.]{2,50}@[\\w\\.]{2,20}").asMatchPredicate();
-    final Predicate<String> PASSPORT_SERIAL_REGEXP = Pattern.compile("\\d{4}").asMatchPredicate();
-    final Predicate<String> PASSPORT_NUMBER_REGEXP = Pattern.compile("\\d{6}").asMatchPredicate();
-    final BigDecimal MIN_AMOUNT = BigDecimal.valueOf(10000);
-    final Integer MIN_TERM = 6;
-    final Long MIN_AGE = 18l;
-    final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-
-    final Integer BASIC_PERIOD_COUNT = 12;
-    final BigDecimal BASIC_PERIOD_DAYS = BigDecimal.valueOf(365. / BASIC_PERIOD_COUNT);
-
-
-    final  BigDecimal INSURANCE_PERCENT = BigDecimal.valueOf(.05);
-    final  BigDecimal INSURANCE_BASE = BigDecimal.valueOf(50000);
+    private BigDecimal baseRate;
+    public final Predicate<String> NAME_REGEXP = Pattern.compile("[a-zA-Z]{2,30}").asMatchPredicate();
+    public final Predicate<String> EMAIL_REGEXP = Pattern.compile("[\\w\\.]{2,50}@[\\w\\.]{2,20}").asMatchPredicate();
+    public final Predicate<String> PASSPORT_SERIAL_REGEXP = Pattern.compile("\\d{4}").asMatchPredicate();
+    public final Predicate<String> PASSPORT_NUMBER_REGEXP = Pattern.compile("\\d{6}").asMatchPredicate();
+    public final BigDecimal MIN_AMOUNT = BigDecimal.valueOf(10000);
+    public final Integer MIN_TERM = 6;
+    public final Long MIN_AGE = 18l;
+    public final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    public final  BigDecimal INSURANCE_PERCENT = BigDecimal.valueOf(.05);
+    public final  BigDecimal INSURANCE_BASE = BigDecimal.valueOf(50000);
     public void preScore(LoanApplicationRequestDTO dto) {
         logger.info("preScoring started");
         try {
@@ -123,70 +118,36 @@ public class ScoringService {
         }
     }
 
-    public BigDecimal calcPsk(BigDecimal amount, Integer term, BigDecimal rate, BigDecimal monthlyPayment, List<PaymentScheduleElement> paymentSchedule) {
+    public BigDecimal calcPsk(BigDecimal amount,
+                              Integer term,
+                              BigDecimal rate,
+                              BigDecimal monthlyPayment,
+                              List<PaymentScheduleElement> paymentSchedule) {
 
         logger.info("calculation psk");
-        return monthlyPayment.multiply(BigDecimal.valueOf(term)).divide(amount, MathContext.DECIMAL64).subtract(BigDecimal.ONE).divide(BigDecimal.valueOf(term).divide(BigDecimal.valueOf(12), MathContext.DECIMAL64)).multiply(BigDecimal.valueOf(100));
-        /*BigDecimal[] q = new BigDecimal[term + 1], e = new BigDecimal[term + 1], mf = new BigDecimal[term + 1];
-        LocalDate dateNow = LocalDate.now();
+        return monthlyPayment.multiply(BigDecimal.valueOf(term))
+                .divide(amount, MathContext.DECIMAL64)
+                .subtract(BigDecimal.ONE)
+                .divide(BigDecimal.valueOf(term).divide(BigDecimal.valueOf(12), MathContext.DECIMAL64))
+                .multiply(BigDecimal.valueOf(100));
 
-        for (int i = 0; i < term + 1; i++) {
-            PaymentScheduleElement payment = paymentSchedule.get(i);
-            int moneyFlowDateDiff = Period.between(payment.getDate(), dateNow).getDays();
-            BigDecimal temp = BigDecimal.valueOf(moneyFlowDateDiff).divide(BASIC_PERIOD_DAYS);
-            q[i] = temp.setScale(0, RoundingMode.FLOOR);
-            e[i] = temp.subtract(q[i]).divide(BASIC_PERIOD_DAYS);
-            if (i == 0){
-                mf[i] = paymentSchedule.get(0).getRemainDebt();
-            } else {
-                mf[i] = paymentSchedule.get(i).getTotalPayment();
-            }
-        }
-        BigDecimal i = BigDecimal.ZERO;
-        BigDecimal x = BigDecimal.ONE;
-        BigDecimal x_m = BigDecimal.ZERO;
-        BigDecimal s = BigDecimal.valueOf(0.001);
-        while (x.compareTo(BigDecimal.ZERO) == 1) {
-            x_m = x;
-            x = BigDecimal.ZERO;
-            for (int k = 0; k < paymentSchedule.size(); k++) {
-                int value;
-                try {
-                    value = q[k].intValueExact();
-                } catch (ArithmeticException ex) {
-                    logger.error(ex.getMessage());
-                    logger.info("possibly loses info in conversation from BigDecimal to exact int");
-                    value = q[k].intValue();
-                }
-                x = x.add(mf[k].divide(BigDecimal.ONE.add(e[k].multiply(i), MathContext.DECIMAL64)
-                                .multiply(BigDecimal.ONE.add(i).pow(value))));
-            }
-            i = i.add(s);
-
-        }
-        if (x.compareTo(x_m) == 1) {
-            i = i.subtract(s);
-        }
-
-        ///is floor really needed?
-        BigDecimal psk = i.multiply(BigDecimal.valueOf(BASIC_PERIOD_COUNT)
-                        .multiply(BigDecimal.valueOf(100000)))
-                .setScale(0, RoundingMode.FLOOR)
-                .divide(BigDecimal.valueOf(1000));
-
-
-        return psk;*/
     }
 
     public BigDecimal calcMonthlyPayment(BigDecimal amount, Integer term, BigDecimal rate) {
         logger.info("calculating monthly payment");
         rate = rate.divide(BigDecimal.valueOf(1200), MathContext.DECIMAL64);
-        // (rate * (rate + 1)^term / ((rate + 1)^term - 1)) * amount = monthlyPayment
-        return rate.add(BigDecimal.ONE).pow(term).multiply(rate).divide(rate.add(BigDecimal.ONE).pow(term).subtract(BigDecimal.ONE), MathContext.DECIMAL64).multiply(amount);
+        return rate.add(BigDecimal.ONE)
+                .pow(term)
+                .multiply(rate)
+                .divide(rate.add(BigDecimal.ONE).pow(term).subtract(BigDecimal.ONE), MathContext.DECIMAL64)
+                .multiply(amount);
 
     }
 
-    public List<PaymentScheduleElement> calcPaymentSchedule(BigDecimal loanAmount, Integer term, BigDecimal rate, BigDecimal monthlyPayment) {
+    public List<PaymentScheduleElement> calcPaymentSchedule(BigDecimal loanAmount,
+                                                            Integer term,
+                                                            BigDecimal rate,
+                                                            BigDecimal monthlyPayment) {
         logger.info("calculating payment schedule");
         BigDecimal monthRate = rate.divide(BigDecimal.valueOf(1200));
         BigDecimal currLoanAmount = loanAmount;
@@ -202,12 +163,14 @@ public class ScoringService {
         pse.setRemainDebt(currLoanAmount.negate());
         result.add(pse);
         for (int i = 0; i < term; i++) {
+            BigDecimal temp;
             pse = new PaymentScheduleElement();
             pse.setDate(dateBegin.plusMonths(i + 1));
             pse.setNumber(i + 1);
             pse.setTotalPayment(monthlyPayment.setScale(2, RoundingMode.HALF_UP));
             pse.setInterestPayment(currLoanAmount.multiply(monthRate).setScale(2, RoundingMode.HALF_UP));
-            pse.setDebtPayment(monthlyPayment.subtract(pse.getInterestPayment()).setScale(2, RoundingMode.HALF_UP));
+            temp = monthlyPayment.subtract(pse.getInterestPayment()).setScale(2, RoundingMode.HALF_UP);
+            pse.setDebtPayment(temp);
             currLoanAmount = currLoanAmount.subtract(pse.getDebtPayment());
             pse.setRemainDebt(currLoanAmount.setScale(2, RoundingMode.HALF_UP));
             result.add(pse);
@@ -221,6 +184,7 @@ public class ScoringService {
     }
 
     public List<LoanOfferDTO> createOffers(LoanApplicationRequestDTO dto) {
+        BigDecimal tempMonthlyPayment, tempTotalAmount;
         LoanOfferDTO curr;
         List<LoanOfferDTO> result = new ArrayList<>(4);
         for (int i = 0 ; i < 4; i++){
@@ -228,39 +192,57 @@ public class ScoringService {
             curr = new LoanOfferDTO();
             curr.setTerm(dto.getTerm());
             curr.setRequestedAmount(dto.getAmount());
-            // where to pick up id?
-            // placeholder
             curr.setApplicationId((long) i);
             result.add(curr);
         }
+
         curr = result.get(0);
-        curr.setIsSalaryClient(false);
-        curr.setIsInsuranceEnabled(false);
-        curr.setRate(baseRate);
-        curr.setMonthlyPayment(this.calcMonthlyPayment(dto.getAmount(), dto.getTerm(), curr.getRate()).setScale(2, RoundingMode.HALF_UP));
-        curr.setTotalAmount(curr.getMonthlyPayment().multiply(BigDecimal.valueOf(curr.getTerm())).setScale(2, RoundingMode.HALF_UP));
+        tempMonthlyPayment = this.calcMonthlyPayment(dto.getAmount(), dto.getTerm(), curr.getRate());
+        tempTotalAmount = curr.getMonthlyPayment().multiply(BigDecimal.valueOf(curr.getTerm()));
+        fillLoanOffer(result.get(0), false, false, baseRate, tempTotalAmount, tempMonthlyPayment);
 
         curr = result.get(1);
         curr.setIsSalaryClient(true);
         curr.setIsInsuranceEnabled(false);
         curr.setRate(baseRate.subtract(BigDecimal.ONE));
-        curr.setMonthlyPayment(this.calcMonthlyPayment(dto.getAmount(), dto.getTerm(), curr.getRate()).setScale(2, RoundingMode.HALF_UP));
-        curr.setTotalAmount(curr.getMonthlyPayment().multiply(BigDecimal.valueOf(curr.getTerm())).setScale(2, RoundingMode.HALF_UP));
+        tempMonthlyPayment = this.calcMonthlyPayment(dto.getAmount(), dto.getTerm(), curr.getRate());
+        curr.setMonthlyPayment(tempMonthlyPayment.setScale(2, RoundingMode.HALF_UP));
+        tempTotalAmount = curr.getMonthlyPayment().multiply(BigDecimal.valueOf(curr.getTerm()));
+        curr.setTotalAmount(tempTotalAmount.setScale(2, RoundingMode.HALF_UP));
 
         curr = result.get(2);
         curr.setIsSalaryClient(false);
         curr.setIsInsuranceEnabled(true);
         curr.setRate(baseRate.subtract(BigDecimal.valueOf(2)));
-        curr.setMonthlyPayment(this.calcMonthlyPayment(dto.getAmount().add(INSURANCE_BASE.add(INSURANCE_PERCENT.multiply(dto.getAmount()))), dto.getTerm(), curr.getRate()).setScale(2, RoundingMode.HALF_UP));
-        curr.setTotalAmount(curr.getMonthlyPayment().multiply(BigDecimal.valueOf(curr.getTerm())).setScale(2, RoundingMode.HALF_UP));
+        tempMonthlyPayment = INSURANCE_BASE.add(INSURANCE_PERCENT.multiply(dto.getAmount()));
+        tempMonthlyPayment = this.calcMonthlyPayment(dto.getAmount().add(tempMonthlyPayment), dto.getTerm(), curr.getRate());
+        curr.setMonthlyPayment(tempMonthlyPayment.setScale(2, RoundingMode.HALF_UP));
+        tempTotalAmount = curr.getMonthlyPayment().multiply(BigDecimal.valueOf(curr.getTerm()));
+        curr.setTotalAmount(tempTotalAmount.setScale(2, RoundingMode.HALF_UP));
 
         curr = result.get(3);
         curr.setIsSalaryClient(true);
         curr.setIsInsuranceEnabled(true);
         curr.setRate(baseRate.subtract(BigDecimal.valueOf(3)));
-        curr.setMonthlyPayment(this.calcMonthlyPayment(dto.getAmount().add(INSURANCE_BASE.add(INSURANCE_PERCENT.multiply(dto.getAmount()))), dto.getTerm(), curr.getRate()).setScale(2, RoundingMode.HALF_UP));
-        curr.setTotalAmount(curr.getMonthlyPayment().multiply(BigDecimal.valueOf(curr.getTerm())).setScale(2, RoundingMode.HALF_UP));
+        tempMonthlyPayment = INSURANCE_BASE.add(INSURANCE_PERCENT.multiply(dto.getAmount()));
+        tempMonthlyPayment = this.calcMonthlyPayment(dto.getAmount().add(tempMonthlyPayment), dto.getTerm(), curr.getRate());
+        curr.setMonthlyPayment(tempMonthlyPayment.setScale(2, RoundingMode.HALF_UP));
+        tempTotalAmount = curr.getMonthlyPayment().multiply(BigDecimal.valueOf(curr.getTerm()));
+        curr.setTotalAmount(tempTotalAmount.setScale(2, RoundingMode.HALF_UP));
 
         return result;
+    }
+
+    private void fillLoanOffer(LoanOfferDTO curr,
+                               boolean isSalary,
+                               boolean isInsurance,
+                               BigDecimal rate,
+                               BigDecimal monthlyPayment,
+                               BigDecimal totalAmount ){
+        curr.setIsSalaryClient(isSalary);
+        curr.setIsInsuranceEnabled(isInsurance);
+        curr.setRate(rate);
+        curr.setMonthlyPayment(monthlyPayment.setScale(2, RoundingMode.HALF_UP));
+        curr.setTotalAmount(totalAmount.setScale(2, RoundingMode.HALF_UP));
     }
 }

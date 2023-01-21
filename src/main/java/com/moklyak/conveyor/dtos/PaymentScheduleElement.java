@@ -1,22 +1,19 @@
 package com.moklyak.conveyor.dtos;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @Schema
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
+@Getter
+@Setter
 public class PaymentScheduleElement {
-    Integer number;
-    LocalDate date;
-    BigDecimal totalPayment;
-    BigDecimal interestPayment;
-    BigDecimal debtPayment;
-    BigDecimal remainDebt;
+    private Integer number;
+    private LocalDate date;
+    private BigDecimal totalPayment;
+    private BigDecimal interestPayment;
+    private BigDecimal debtPayment;
+    private BigDecimal remainDebt;
 }

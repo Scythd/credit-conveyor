@@ -1,25 +1,22 @@
 package com.moklyak.conveyor.dtos;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @Schema
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
+@Getter
+@Setter
 public class LoanApplicationRequestDTO {
-    BigDecimal amount;
-    Integer term;
-    String firstName;
-    String lastName;
-    String middleName;
-    String email;
-    LocalDate birthDate;
-    String passportSeries;
-    String passportNumber;
+    private BigDecimal amount;
+    private Integer term;
+    private String firstName;
+    private String lastName;
+    private String middleName;
+    private String email;
+    private LocalDate birthDate;
+    private String passportSeries;
+    private String passportNumber;
 }
