@@ -8,7 +8,7 @@ public enum Gender {
     FEMALE(BigDecimal.valueOf(-3), x -> x >= 35 && x < 60),
     NON_BINARY(BigDecimal.valueOf(3), x -> true);
 
-    BigDecimal rateChanger;
+    private BigDecimal rateChanger;
     Predicate<Integer> ageChecker;
 
     Gender(BigDecimal rateChanger, Predicate<Integer> ageChecker) {
