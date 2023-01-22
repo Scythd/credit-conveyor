@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.moklyak.conveyor.controllers.ConveyorController;
 import com.moklyak.conveyor.dtos.LoanApplicationRequestDTO;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -22,10 +21,10 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @SpringBootTest(classes = ConveyorController.class)
-class ConveyorApplicationTests {
+class DealApplicationTests {
 
     @Autowired
-    ConveyorController controller;
+    DealController controller;
     protected MockMvc mvc;
     @Autowired
     WebApplicationContext webApplicationContext;

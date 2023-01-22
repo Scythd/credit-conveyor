@@ -1,4 +1,4 @@
-package com.moklyak.conveyor;
+package com.moklyak.deal;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -7,7 +7,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class DealApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(ConveyorApplication.class, args);
+        SpringApplication.run(DealApplication.class, args);
     }
 
 }
