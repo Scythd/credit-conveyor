@@ -184,7 +184,7 @@ public class ScoringService {
     }
 
     public List<LoanOfferDTO> createOffers(LoanApplicationRequestDTO dto) {
-        BigDecimal tempMonthlyPayment, tempTotalAmount;
+        BigDecimal tempMonthlyPayment, tempTotalAmount, tempRate;
         LoanOfferDTO curr;
         List<LoanOfferDTO> result = new ArrayList<>(4);
         for (int i = 0 ; i < 4; i++){
@@ -196,39 +196,26 @@ public class ScoringService {
             result.add(curr);
         }
 
-        curr = result.get(0);
-        tempMonthlyPayment = this.calcMonthlyPayment(dto.getAmount(), dto.getTerm(), curr.getRate());
-        tempTotalAmount = curr.getMonthlyPayment().multiply(BigDecimal.valueOf(curr.getTerm()));
-        fillLoanOffer(result.get(0), false, false, baseRate, tempTotalAmount, tempMonthlyPayment);
+        tempMonthlyPayment = this.calcMonthlyPayment(dto.getAmount(), dto.getTerm(), baseRate);
+        tempTotalAmount = tempMonthlyPayment.multiply(BigDecimal.valueOf(dto.getTerm()));
+        fillLoanOffer(result.get(0), false, false, baseRate, tempMonthlyPayment, tempTotalAmount);
 
-        curr = result.get(1);
-        curr.setIsSalaryClient(true);
-        curr.setIsInsuranceEnabled(false);
-        curr.setRate(baseRate.subtract(BigDecimal.ONE));
-        tempMonthlyPayment = this.calcMonthlyPayment(dto.getAmount(), dto.getTerm(), curr.getRate());
-        curr.setMonthlyPayment(tempMonthlyPayment.setScale(2, RoundingMode.HALF_UP));
-        tempTotalAmount = curr.getMonthlyPayment().multiply(BigDecimal.valueOf(curr.getTerm()));
-        curr.setTotalAmount(tempTotalAmount.setScale(2, RoundingMode.HALF_UP));
+        tempRate = baseRate.subtract(BigDecimal.ONE);
+        tempMonthlyPayment = this.calcMonthlyPayment(dto.getAmount(), dto.getTerm(), tempRate);
+        tempTotalAmount = tempMonthlyPayment.multiply(BigDecimal.valueOf(dto.getTerm()));
+        fillLoanOffer(result.get(1), true, false, tempRate, tempMonthlyPayment, tempTotalAmount);
 
-        curr = result.get(2);
-        curr.setIsSalaryClient(false);
-        curr.setIsInsuranceEnabled(true);
-        curr.setRate(baseRate.subtract(BigDecimal.valueOf(2)));
+        tempRate = baseRate.subtract(BigDecimal.valueOf(2));
         tempMonthlyPayment = INSURANCE_BASE.add(INSURANCE_PERCENT.multiply(dto.getAmount()));
-        tempMonthlyPayment = this.calcMonthlyPayment(dto.getAmount().add(tempMonthlyPayment), dto.getTerm(), curr.getRate());
-        curr.setMonthlyPayment(tempMonthlyPayment.setScale(2, RoundingMode.HALF_UP));
-        tempTotalAmount = curr.getMonthlyPayment().multiply(BigDecimal.valueOf(curr.getTerm()));
-        curr.setTotalAmount(tempTotalAmount.setScale(2, RoundingMode.HALF_UP));
+        tempMonthlyPayment = this.calcMonthlyPayment(dto.getAmount().add(tempMonthlyPayment), dto.getTerm(), tempRate);
+        tempTotalAmount = tempMonthlyPayment.multiply(BigDecimal.valueOf(dto.getTerm()));
+        fillLoanOffer(result.get(2), false, true, tempRate, tempMonthlyPayment, tempTotalAmount);
 
-        curr = result.get(3);
-        curr.setIsSalaryClient(true);
-        curr.setIsInsuranceEnabled(true);
-        curr.setRate(baseRate.subtract(BigDecimal.valueOf(3)));
+        tempRate = baseRate.subtract(BigDecimal.valueOf(3));
         tempMonthlyPayment = INSURANCE_BASE.add(INSURANCE_PERCENT.multiply(dto.getAmount()));
-        tempMonthlyPayment = this.calcMonthlyPayment(dto.getAmount().add(tempMonthlyPayment), dto.getTerm(), curr.getRate());
-        curr.setMonthlyPayment(tempMonthlyPayment.setScale(2, RoundingMode.HALF_UP));
-        tempTotalAmount = curr.getMonthlyPayment().multiply(BigDecimal.valueOf(curr.getTerm()));
-        curr.setTotalAmount(tempTotalAmount.setScale(2, RoundingMode.HALF_UP));
+        tempMonthlyPayment = this.calcMonthlyPayment(dto.getAmount().add(tempMonthlyPayment), dto.getTerm(), tempRate);
+        tempTotalAmount = tempMonthlyPayment.multiply(BigDecimal.valueOf(dto.getTerm()));
+        fillLoanOffer(result.get(3), true, true, tempRate, tempMonthlyPayment, tempTotalAmount);
 
         return result;
     }
