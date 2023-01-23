@@ -5,6 +5,8 @@ import com.moklyak.deal.entities.*;
 import com.moklyak.deal.enums.ApplicationStatus;
 import com.moklyak.deal.repositories.ApplicationRepository;
 import com.moklyak.deal.repositories.ClientRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.sql.Date;
@@ -15,6 +17,8 @@ import java.util.List;
 
 @Service
 public class DealService {
+
+    private final static Logger logger = LoggerFactory.getLogger(DealService.class);
     private final ClientRepository clientRepository;
     private final ApplicationRepository applicationRepository;
     private final ServiceConveyorFeignClient conveyorFeignClient;
@@ -107,10 +111,10 @@ public class DealService {
         sdDto.setMiddleName(app.getClient().getLastName());
         sdDto.setIsInsuranceEnabled(app.getAppliedOffer().getIsInsuranceEnabled());
         sdDto.setIsSalaryClient(app.getAppliedOffer().getIsSalaryClient());
-
+        logger.info("adding changes to client {} in app {}", client, app);
         applicationRepository.save(app);
         clientRepository.save(app.getClient());
-
+        logger.info("start sending request to MS CC /calculation with dto: {}", sdDto);
         return conveyorFeignClient.getCalculation(sdDto);
     }
 
