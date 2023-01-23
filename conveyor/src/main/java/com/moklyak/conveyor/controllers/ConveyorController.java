@@ -31,7 +31,11 @@ public class ConveyorController {
     @PostMapping(value = "/offers")
     ResponseEntity<List<LoanOfferDTO>> offers(@RequestBody LoanApplicationRequestDTO dto) {
         logger.info("generating offers by request body: {}.", dto);
-        scoringService.preScore(dto);
+        try {
+            scoringService.preScore(dto);
+        } catch (IllegalArgumentException ex){
+            return ResponseEntity.unprocessableEntity().header("error", ex.getMessage()).build();
+        }
         List<LoanOfferDTO> result = scoringService.createOffers(dto);
         result.sort((x, y) -> y.getRate().compareTo(x.getRate()));
         logger.info("generated offers: {}, by request body: {}.", result, dto);
