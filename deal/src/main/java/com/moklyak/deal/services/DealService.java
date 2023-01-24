@@ -111,7 +111,7 @@ public class DealService {
         sdDto.setMiddleName(app.getClient().getLastName());
         sdDto.setIsInsuranceEnabled(app.getAppliedOffer().getIsInsuranceEnabled());
         sdDto.setIsSalaryClient(app.getAppliedOffer().getIsSalaryClient());
-        logger.info("adding changes to client {} in app {}", client, app);
+        logger.info("adding changes to client {} in app {}", app.getClient(), app);
         applicationRepository.save(app);
         clientRepository.save(app.getClient());
         logger.info("start sending request to MS CC /calculation with dto: {}", sdDto);
